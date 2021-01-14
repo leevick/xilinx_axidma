@@ -11,6 +11,7 @@
  **/
 
 // Kernel dependencies
+#include <linux/version.h>
 #include <linux/list.h>         // Linked list definitions and functions
 #include <linux/sched.h>        // `Current` global variable for current task
 #include <linux/device.h>       // Device and class creation functions
@@ -274,7 +275,11 @@ static int axidma_mmap(struct file *file, struct vm_area_struct *vma)
     dma_alloc->user_addr = (void *)vma->vm_start;
 
     // Configure the DMA device
+#if KERNEL_VERSION(5, 0, 0) < LINUX_VERSION_CODE
+    of_dma_configure(dev->device, NULL,0);
+#else
     of_dma_configure(dev->device, NULL);
+#endif
 
     // Allocate the requested region a contiguous and uncached for DMA
     dma_alloc->kern_addr = dma_alloc_coherent(&dev->pdev->dev, dma_alloc->size,
@@ -326,11 +331,20 @@ ret:
 static bool axidma_access_ok(const void __user *arg, size_t size, bool readonly)
 {
     // Note that VERIFY_WRITE implies VERIFY_WRITE, so read-write is handled
+
+#if KERNEL_VERSION(5, 0, 0) < LINUX_VERSION_CODE
+    if (!readonly && !access_ok(arg, size)) {
+#else
     if (!readonly && !access_ok(VERIFY_WRITE, arg, size)) {
+#endif
         axidma_err("Argument address %p, size %zu cannot be written to.\n",
                    arg, size);
         return false;
+#if KERNEL_VERSION(5, 0, 0) < LINUX_VERSION_CODE
+    } else if (!access_ok(arg, size)) {
+#else
     } else if (!access_ok(VERIFY_READ, arg, size)) {
+#endif
         axidma_err("Argument address %p, size %zu cannot be read from.\n",
                    arg, size);
         return false;

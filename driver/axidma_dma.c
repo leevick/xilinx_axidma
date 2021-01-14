@@ -9,6 +9,8 @@
  * @bug No known bugs.
  **/
 
+#include <linux/version.h>
+
 // Kernel dependencies
 #include <linux/delay.h>            // Milliseconds to jiffies converstion
 #include <linux/wait.h>             // Completion related functions
@@ -143,8 +145,11 @@ static struct axidma_chan *axidma_get_chan(struct axidma_device *dev,
 static void axidma_dma_callback(void *data)
 {
     struct axidma_cb_data *cb_data;
+#if KERNEL_VERSION(5, 0, 0) < LINUX_VERSION_CODE
+    struct kernel_siginfo sig_info;
+#else
     struct siginfo sig_info;
-
+#endif
     /* For synchronous transfers, notify the kernel thread waiting. For
      * asynchronous transfers, send a signal to userspace if requested. */
     cb_data = data;

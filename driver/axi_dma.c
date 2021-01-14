@@ -10,6 +10,11 @@
  **/
 
 // Kernel dependencies
+#include <linux/version.h>
+#if KERNEL_VERSION(5, 0, 0) < LINUX_VERSION_CODE
+#include <linux/of.h>
+#endif
+
 #include <linux/module.h>           // Module init and exit macros
 #include <linux/moduleparam.h>      // Module param macro
 #include <linux/slab.h>             // Allocation functions
